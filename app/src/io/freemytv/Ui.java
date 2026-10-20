@@ -30,6 +30,7 @@ final class Ui {
     static final Locale PT = new Locale("pt", "BR");
     /** English, Portuguese, Spanish or German, from the settings or, with "auto", the TV's own language. */
     static volatile String language = language();
+    static volatile boolean ru = "ru".equals(language);
     static volatile boolean en = "en".equals(language), es = "es".equals(language), de = "de".equals(language);
     static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold;
     private static boolean loaded;
@@ -69,12 +70,13 @@ final class Ui {
         String lang = Prefs.language();
         if (!lang.equals("auto")) return lang;
         lang = Locale.getDefault().getLanguage();
-        return "pt".equals(lang) || "es".equals(lang) || "de".equals(lang) ? lang : "en";
+        return "ru".equals(lang) || "pt".equals(lang) || "es".equals(lang) || "de".equals(lang) ? lang : "en";
     }
 
     /** After the language changes in the settings (and once Prefs can read them). */
     static void applyLanguage() {
         language = language();
+        ru = "ru".equals(language);
         en = "en".equals(language);
         es = "es".equals(language);
         de = "de".equals(language);
@@ -135,16 +137,16 @@ final class Ui {
     }
 
     static String tr(String pt, String english) {
-        return de ? German.text(english) : es ? Spanish.text(english) : en ? english : pt;
+        return ru ? Russian.text(english) : de ? German.text(english) : es ? Spanish.text(english) : en ? english : pt;
     }
 
     /** German comes from German.java here too (keyed by the English, with patterns for text built at runtime). */
     static String tr(String pt, String english, String spanish) {
-        return de ? German.text(english) : es ? spanish : en ? english : pt;
+        return ru ? Russian.text(english) : de ? German.text(english) : es ? spanish : en ? english : pt;
     }
 
     static Locale locale() {
-        return es ? spanish() : de ? german() : en ? Locale.US : PT;
+        return ru ? new Locale("ru", "RU") : es ? spanish() : de ? german() : en ? Locale.US : PT;
     }
 
     /** The TV's own Spanish (es-MX, es-AR…) when it is in Spanish, Spain's otherwise. */
@@ -161,14 +163,12 @@ final class Ui {
 
     /** "21:47" (in English, "9:47", like the iPhone in the US). */
     static String clock(long now) {
-        return en ? new SimpleDateFormat("h:mm", Locale.US).format(new Date(now))
-                : new SimpleDateFormat("HH:mm", locale()).format(new Date(now));
+        return new SimpleDateFormat("HH:mm", locale()).format(new Date(now));
     }
 
     /** "5:21" (sunrise and sunset; in English, "5:21 AM"). */
     static String time(long at) {
-        return once("time", at, () -> en ? new SimpleDateFormat("h:mm a", Locale.US).format(new Date(at))
-                : new SimpleDateFormat("H:mm", locale()).format(new Date(at)));
+        return once("time", at, () -> new SimpleDateFormat("HH:mm", locale()).format(new Date(at)));
     }
 
     private static final HashMap<String, String> FORMATTED = new HashMap<>();
@@ -192,7 +192,7 @@ final class Ui {
 
     /** "domingo, 18 de outubro" (lowercase, like the iPhone in Portuguese); "Sunday, October 18" in English; "Sonntag, 18. Oktober". */
     static String date(long now) {
-        return en ? new SimpleDateFormat("EEEE, MMMM d", Locale.US).format(new Date(now))
+        return ru ? new SimpleDateFormat("EEEE, d MMMM", locale()).format(new Date(now)) : en ? new SimpleDateFormat("EEEE, MMMM d", Locale.US).format(new Date(now))
                 : new SimpleDateFormat(de ? "EEEE, d. MMMM" : "EEEE, d 'de' MMMM", locale()).format(new Date(now));
     }
 

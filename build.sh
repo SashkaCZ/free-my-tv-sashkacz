@@ -54,7 +54,7 @@ final class Config {
     static final String LATITUDE = "$LAT";
     static final String LONGITUDE = "$LON";
     static final String CITY = "$(prop city '')";
-    static final String LANGUAGE = "$(prop language auto)";
+    static final String LANGUAGE = "$(prop language ru)";
     static final String CURRENCY = "$(prop currency USD)";
     static final String TEMPERATURE = "$(prop temperature auto)";
     static final boolean DISABLE_ASSISTANT = $ASSIST;
@@ -67,7 +67,7 @@ EOF
 # Fonts uncompressed: Android reads them straight from the APK.
 "$BT/aapt2" link -o out/base.apk -I "$AJ" --manifest app/AndroidManifest.xml --java out/gen out/res.zip \
   --min-sdk-version 28 --target-sdk-version 33 -A app/assets -0 ttf
-"$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ:$BT/core-lambda-stubs.jar" -classpath "$AJ" \
+"$JAVAC" -encoding UTF-8 -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ:$BT/core-lambda-stubs.jar" -classpath "$AJ" \
   -d out/classes $(find app/src out/gen -name '*.java')
 "$BT/d8" --release --min-api 28 --lib "$AJ" --output out $(find out/classes -name '*.class')
 (cd out && zip -qj base.apk classes.dex)

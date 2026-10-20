@@ -257,8 +257,8 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     /** Loads the next photo in the background (one at a time); once ready, it comes in at the right moment. */
     private void prepareNext() {
         if (!running || decoding || prepared != null) return;
-        List<Recs.Pick> list = recs.showcase();
-        if (list.isEmpty()) return;
+        List<Recs.Pick> list = Prefs.customPhotos() ? PhotoAlbum.picks(getContext()) : recs.showcase();
+        if (list.isEmpty()) { fallback = current == null; return; }
         Slide last = incoming != null ? incoming : current;
         int start = 0;
         if (last != null) {
@@ -283,7 +283,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             prepared = newSlide(pick, last.image, last.frost, last.lightCaption, last.lightClock);
             return;
         }
-        File file = recs.readyImage(pick);
+        File file = "local".equals(pick.kind) ? new File(pick.backdrop) : recs.readyImage(pick);
         if (file == null) {
             failed.add(Recs.key(pick));   // the image is gone from disk: try the next one
             prepareNext();
@@ -673,6 +673,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     private void recordCaption(Slide s) {
         Canvas c = s.caption.beginRecording(w, h);
         try {
+            if ("local".equals(s.pick.kind)) return;
             float x = MARGIN * k, metaBase = META_BASE * k, titleBase = metaBase - 58 * k;
             String title = s.pick.title == null ? "" : s.pick.title;
             StaticLayout t = StaticLayout.Builder.obtain(title, 0, title.length(), titlePaint, Math.round(TITLE_W * k))

@@ -55,7 +55,7 @@ final class Prefs {
     static String language() {
         String v = app == null ? Config.LANGUAGE : sp().getString("language", Config.LANGUAGE);
         v = v.trim().toLowerCase(Locale.ROOT);
-        return v.startsWith("pt") ? "pt" : v.startsWith("es") ? "es" : v.startsWith("de") ? "de" : v.startsWith("en") ? "en" : "auto";
+        return v.startsWith("ru") ? "ru" : v.startsWith("pt") ? "pt" : v.startsWith("es") ? "es" : v.startsWith("de") ? "de" : v.startsWith("en") ? "en" : "auto";
     }
 
     static void setLanguage(String v) { put("language", v); Ui.applyLanguage(); }
@@ -97,6 +97,17 @@ final class Prefs {
 
     static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
     static void setCoin(int i, boolean on) { put("coin" + i, on); }
+
+    static String tmdbKey() { return app == null ? Config.TMDB_KEY : sp().getString("tmdbKey", Config.TMDB_KEY).trim(); }
+    static void setTmdbKey(String key) { put("tmdbKey", key.trim()); }
+    static boolean recommendations() { return sp().getBoolean("recommendations", true); }
+    static void setRecommendations(boolean on) { put("recommendations", on); }
+    static boolean clock() { return sp().getBoolean("clock", true); }
+    static boolean date() { return sp().getBoolean("date", true); }
+    static void setClock(boolean on) { put("clock", on); }
+    static void setDate(boolean on) { put("date", on); }
+    static boolean customPhotos() { return sp().getBoolean("customPhotos", false); }
+    static void setCustomPhotos(boolean on) { put("customPhotos", on); }
 
     // MARK: - Shelf
 

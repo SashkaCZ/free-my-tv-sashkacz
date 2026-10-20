@@ -226,7 +226,7 @@
   // MARK: - Picks and background
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    var list = Prefs.recommendations() ? Data.picks(TAB_KIND[st.tab]) : [];
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
     var same = list.length === cards.length;
@@ -277,6 +277,8 @@
 
   function renderClock() {
     var d = new Date(), c = $('clock');
+    c.firstChild.style.display = Prefs.clock() ? '' : 'none';
+    c.lastChild.style.display = Prefs.date() ? '' : 'none';
     c.firstChild.textContent = Data.time(d.getTime());
     try {
       c.lastChild.textContent = d.toLocaleDateString(I18N.locale(), {weekday: 'long', day: 'numeric', month: 'long'});
@@ -465,8 +467,8 @@
     var lang = Prefs.language(), unit = Prefs.temperature(), theme = Prefs.theme();
     var auto = tr('Automático', 'Automatic', 'Automático'), on = tr('Ligado', 'On', 'Activado'), off = tr('Desligado', 'Off', 'Desactivado');
     var rows = [
-      {label: tr('Idioma', 'Language', 'Idioma'), value: lang === 'pt' ? 'Português' : lang === 'en' ? 'English' : lang === 'es' ? 'Español' : auto,
-        step: function (d) { cycle('language', ['auto', 'en', 'es', 'pt'], lang, d); I18N.set(Prefs.language()); renderAll(); }},
+      {label: tr('Idioma', 'Language', 'Idioma'), value: lang === 'ru' ? 'Русский' : lang === 'pt' ? 'Português' : lang === 'en' ? 'English' : lang === 'es' ? 'Español' : auto,
+        step: function (d) { cycle('language', ['auto', 'ru', 'en', 'es', 'pt'], lang, d); I18N.set(Prefs.language()); renderAll(); }},
       {label: tr('Temperatura', 'Temperature', 'Temperatura'), value: unit === 'C' ? '°C' : unit === 'F' ? '°F' : auto,
         step: function (d) { cycle('temperature', ['auto', 'C', 'F'], unit, d); renderPanels(); }},
       {label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
@@ -476,6 +478,25 @@
       {label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
         step: function () { Prefs.set('quotes', !Prefs.quotes()); Data.settingsChanged(); }}
     ];
+    rows.push({label: tr('Relógio', 'Clock'), toggle: Prefs.clock(), step: function () { Prefs.set('clock', !Prefs.clock()); renderClock(); }});
+    rows.push({label: tr('Data', 'Date'), toggle: Prefs.date(), step: function () { Prefs.set('date', !Prefs.date()); renderClock(); }});
+    rows.push({label: tr('TMDB', 'TMDB recommendations'), toggle: Prefs.recommendations(), step: function () { Prefs.set('recommendations', !Prefs.recommendations()); renderCards(); }});
+    rows.push({label: tr('TMDB', 'TMDB API key'), value: tr('', Prefs.tmdbKey() ? 'Configured' : 'Not configured'), step: function () {
+      var key = window.prompt(tr('', 'API key or read access token'), '');
+      if (key === null) return;
+      Prefs.set('tmdbKey', key.trim()); Data.settingsChanged();
+    }});
+    rows.push({label: tr('Fotos', 'Screensaver photos'), value: '›', step: function () {
+      var previous = Prefs.photoUrls().join(' ');
+      var value = window.prompt(tr('Fotos', 'Enter photo URLs separated by spaces; empty restores recommendations'), previous);
+      if (value === null) return;
+      var urls = value.replace(/^\s+|\s+$/g, '').split(/\s+/);
+      if (!value.replace(/\s/g, '')) urls = [];
+      for (var u = 0; u < urls.length; u++) if (!/^https?:\/\/[^\s]+$/i.test(urls[u])) {
+        window.alert(tr('Fotos', 'Photo URLs must start with http:// or https://')); return;
+      }
+      Prefs.set('photoUrls', urls.slice(0, 30));
+    }});
     var names = ['Bitcoin', 'Ethereum', 'Solana', tr('Dólar', 'Dollar', 'Dólar')];
     var count = Data.currency === 'BRL' ? 4 : 3;
     for (var i = 0; i < count; i++) {
@@ -745,7 +766,8 @@
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
 
   function showSaver() {
-    var photos = Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
+    var custom = Prefs.photoUrls();
+    var photos = custom.length ? custom.map(function (url) { return {backdrop: url, title: '', local: true}; }) : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
     saverOn = true;
     var s = $('saver');
     s.innerHTML = '';
@@ -761,7 +783,7 @@
       var p = photos.length ? photos[saverIndex++ % photos.length] : null;
       var back = front === a ? b : a;
       if (p) {
-        back.style.backgroundImage = 'url(' + Data.image(p.backdrop, 'original') + ')';
+        back.style.backgroundImage = 'url(' + JSON.stringify(p.local ? p.backdrop : Data.image(p.backdrop, 'original')) + ')';
         back.style.webkitTransform = back.style.transform = 'scale(1.0)';
         clock.lastChild.textContent = p.title;
         setTimeout(function () {

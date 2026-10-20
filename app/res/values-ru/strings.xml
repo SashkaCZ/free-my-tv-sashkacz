@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Free My TV</string>
+    <string name="remote_key_service">Позволяет кнопкам Netflix, YouTube, Prime Video и TCL Channel на пульте открывать выбранные в Free My TV приложения. Служба считывает только эти кнопки.</string>
+</resources>

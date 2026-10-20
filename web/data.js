@@ -43,8 +43,13 @@ var Prefs = (function () {
   function pick(name, fallback) { return v[name] === undefined ? fallback : v[name]; }
   return {
     version: 0,
-    language: function () { return pick('language', CONFIG.language || 'auto'); },
+    tmdbKey: function () { return pick('tmdbKey', CONFIG.tmdbKey || '').trim(); },
+    language: function () { return pick('language', CONFIG.language || 'ru'); },
     temperature: function () { return pick('temperature', CONFIG.temperature || 'auto'); },
+    photoUrls: function () { return pick('photoUrls', []); },
+    clock: function () { return pick('clock', true); },
+    date: function () { return pick('date', true); },
+    recommendations: function () { return pick('recommendations', true); },
     theme: function () { return pick('theme', 'auto'); },
     weather: function () { return pick('weather', true); },
     quotes: function () { return pick('quotes', CONFIG.showCrypto !== false); },
@@ -187,7 +192,7 @@ var Data = (function () {
 
   // MARK: - Picks (TMDB)
 
-  var KEY = (CONFIG.tmdbKey || '').trim();
+  var KEY = Prefs.tmdbKey();
   var REGION = Place.country;
   var API = 'https://api.themoviedb.org/3';
 
@@ -314,7 +319,7 @@ var Data = (function () {
       }
       if (p.kind === 'movie' && o.runtime > 0) {
         var h = Math.floor(o.runtime / 60), m = o.runtime % 60;
-        parts.push(I18N.lang === 'en' ? (h ? h + 'h ' + m + 'm' : m + 'm') : (h ? h + ' h ' + m + ' min' : m + ' min'));
+        parts.push(I18N.lang === 'ru' ? (h ? h + ' ч ' + m + ' мин' : m + ' мин') : I18N.lang === 'en' ? (h ? h + 'h ' + m + 'm' : m + 'm') : (h ? h + ' h ' + m + ' min' : m + ' min'));
       } else if (p.kind === 'tv' && o.number_of_seasons > 0) {
         var n = o.number_of_seasons;
         parts.push(tr(n === 1 ? '1 temporada' : n + ' temporadas', n === 1 ? '1 season' : n + ' seasons', n === 1 ? '1 temporada' : n + ' temporadas'));
@@ -453,7 +458,7 @@ var Data = (function () {
     setApps: function (apps) { installed = apps; },
     appFor: appFor,
     refresh: function () { refreshWeather(); refreshPrices(); refreshRecs(); },
-    settingsChanged: function () { pricesAt = 0; refreshPrices(); changed(); },
+    settingsChanged: function () { KEY = Prefs.tmdbKey(); pricesAt = 0; refreshPrices(); refreshRecs(); changed(); },
     get weather() { return weather; },
     get weatherAt() { return weatherAt; },
     prices: prices,
@@ -498,12 +503,10 @@ var Data = (function () {
     },
     hour: function (at) {
       var d = new Date(at), h = d.getHours();
-      if (I18N.lang === 'en') return (h % 12 || 12) + (h < 12 ? ' AM' : ' PM');
-      return I18N.lang === 'es' ? (h < 10 ? '0' : '') + h + ':00' : h + 'h';
+      return (h < 10 ? '0' : '') + h + ':00';
     },
     time: function (at) {
       var d = new Date(at), h = d.getHours(), m = d.getMinutes();
-      if (I18N.lang === 'en') return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM');
       return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
     },
     /** "12 min ago" when the data is old (no internet), or empty. */

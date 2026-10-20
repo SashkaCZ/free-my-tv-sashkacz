@@ -246,7 +246,7 @@ final class HomeData {
     }
 
     static List<String[]> findCity(String name) throws Exception {
-        String lang = Ui.en ? "en" : Ui.es ? "es" : "pt";
+        String lang = Ui.language;
         JSONObject o = new JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?count=10&format=json&language=" + lang
                 + "&name=" + URLEncoder.encode(name.trim(), "UTF-8")));
         JSONArray results = o.optJSONArray("results");
@@ -334,6 +334,18 @@ final class HomeData {
     /** The weather in words, from Open-Meteo's WMO code. */
     static String condition(int code, boolean day) {
         if (code < 0) return "";
+        if (Ui.ru) {
+            if (code == 0) return "Ясно";
+            if (code == 1) return "Преимущественно ясно";
+            if (code == 2) return "Переменная облачность";
+            if (code == 3) return "Облачно";
+            if (code == 45 || code == 48) return "Туман";
+            if (code >= 51 && code <= 57) return "Морось";
+            if (code == 65 || code == 67 || code == 82) return "Сильный дождь";
+            if (code >= 71 && code <= 77 || code == 85 || code == 86) return "Снег";
+            if (code >= 95) return "Гроза";
+            return "Дождь";
+        }
         if (Ui.en) {
             if (code == 0) return "Clear";
             if (code == 1) return day ? "Mostly Sunny" : "Mostly Clear";
@@ -413,8 +425,7 @@ final class HomeData {
     }
 
     static String hour(long at) {
-        return Ui.once("hour", at, () -> Ui.en ? new SimpleDateFormat("h a", Locale.US).format(new java.util.Date(at))
-                : new SimpleDateFormat(Ui.es ? "HH:mm" : Ui.de ? "HH 'Uhr'" : "HH'h'", Ui.locale()).format(new java.util.Date(at)));
+        return Ui.once("hour", at, () -> new SimpleDateFormat("HH:mm", Ui.locale()).format(new java.util.Date(at)));
     }
 
     /** How long ago the data was fetched, if it's stale (no internet): "12 min ago". */
@@ -423,6 +434,7 @@ final class HomeData {
         long age = System.currentTimeMillis() - at;
         if (age < every * 2) return "";
         long minutes = age / 60_000;
+        if (Ui.ru) return minutes < 60 ? minutes + " мин. назад" : (minutes / 60) + " ч. назад";
         if (Ui.en) return minutes < 60 ? minutes + " min ago" : (minutes / 60) + " h ago";
         if (Ui.es) return minutes < 60 ? "hace " + minutes + " min" : "hace " + (minutes / 60) + " h";
         if (Ui.de) return minutes < 60 ? "vor " + minutes + " Min." : "vor " + (minutes / 60) + " Std.";

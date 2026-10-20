@@ -1046,7 +1046,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         int n = statusItems.size();
         float b = BUTTON * k, gap = 4 * k, pad = 6 * k;
         float info = 0;
-        if (showInfo()) {
+        if (showInfo() && Prefs.clock()) {
             info = 26 * k + capsuleText.measureText(clockText);
             HomeData.Weather wx = data.weather;
             if (!Double.isNaN(wx.temp) && Prefs.weather()) {
@@ -1548,7 +1548,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             nowTemp = HomeData.degrees(wx.temp);
             highLow = Ui.en ? "H:" + HomeData.degrees(wx.max) + "   L:" + HomeData.degrees(wx.min)
                     : Ui.de ? "H:" + HomeData.degrees(wx.max) + "   T:" + HomeData.degrees(wx.min)
-                    : "Máx. " + HomeData.degrees(wx.max) + "   Mín. " + HomeData.degrees(wx.min);
+                    : Ui.ru ? "Макс. " + HomeData.degrees(wx.max) + "  Мин. " + HomeData.degrees(wx.min) : "Máx. " + HomeData.degrees(wx.max) + "   Mín. " + HomeData.degrees(wx.min);
             for (int i = 0; i < wx.hours.size() && i < 6; i++) {
                 hourText[i] = HomeData.hour(wx.hours.get(i));
                 hourTempText[i] = HomeData.degrees(wx.hourTemp.get(i));
@@ -2291,7 +2291,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** The three cards of the current tab (Explore, Movies, Shows) and the background taken from the first one. */
     private void updateCards() {
-        List<Recs.Pick> list = recs.now(TAB_KIND[tab]);
+        if (!picksOn() && zone == Z_TOP && topIndex < 3) topIndex = 3;
+        List<Recs.Pick> list = picksOn() ? recs.now(TAB_KIND[tab]) : java.util.Collections.emptyList();
         if (!samePicks(list, cards)) {
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
@@ -2394,13 +2395,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private boolean picksOn() {
-        return Recs.hasKey(getContext());
+        return Prefs.recommendations() && Recs.hasKey(getContext());
     }
 
     private void drawClock(Canvas c) {
         float x = MARGIN * k;
-        c.drawText(dateText, x - Ui.leftBearing(lDate, dateText), L_DATE_BASE * k, lDate);
-        c.drawText(clockText, x - Ui.leftBearing(lClock, clockText), L_CLOCK_BASE * k, lClock);
+        if (Prefs.date()) c.drawText(dateText, x - Ui.leftBearing(lDate, dateText), L_DATE_BASE * k, lDate);
+        if (Prefs.clock()) c.drawText(clockText, x - Ui.leftBearing(lClock, clockText), L_CLOCK_BASE * k, lClock);
         HomeData.Weather wx = data.weather;
         if (!Prefs.weather() || Double.isNaN(wx.temp)) return;
         if (data.weatherAt != weatherLineAt || Prefs.version != weatherLinePrefs || !Ui.language.equals(weatherLineLanguage)) {
@@ -2410,7 +2411,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             weatherLine = HomeData.degrees(wx.temp) + "  " + HomeData.condition(wx.code, wx.isDay) + "   "
                     + (Ui.en ? "H:" + HomeData.degrees(wx.max) + "  L:" + HomeData.degrees(wx.min)
                     : Ui.de ? "H:" + HomeData.degrees(wx.max) + "  T:" + HomeData.degrees(wx.min)
-                    : "Máx. " + HomeData.degrees(wx.max) + "  Mín. " + HomeData.degrees(wx.min));
+                    : Ui.ru ? "Макс. " + HomeData.degrees(wx.max) + "  Мин. " + HomeData.degrees(wx.min) : "Máx. " + HomeData.degrees(wx.max) + "  Mín. " + HomeData.degrees(wx.min));
         }
         float size = 40 * k, base = L_WEATHER_BASE * k;
         String symbol = Symbols.weather(wx.code, wx.isDay);

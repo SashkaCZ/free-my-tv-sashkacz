@@ -128,7 +128,7 @@ final class Recs {
     void removeListener(Listener l) { listeners.remove(l); }
 
     static boolean hasKey(Context c) {
-        return !Config.TMDB_KEY.trim().isEmpty();
+        return !Prefs.tmdbKey().isEmpty();
     }
 
     /** Last fetch, for the settings screen: {count, error, at}. Written by the home screen (another process). */
@@ -153,7 +153,7 @@ final class Recs {
     String error() { return error; }
 
     static String periodLabel() {
-        return (Ui.es ? PERIOD_LABEL_ES : Ui.de ? PERIOD_LABEL_DE : Ui.en ? PERIOD_LABEL_EN : PERIOD_LABEL)[period(System.currentTimeMillis())];
+        return (Ui.ru ? new String[] {"ЭТИМ УТРОМ", "СЕГОДНЯ ДНЁМ", "СЕГОДНЯ ВЕЧЕРОМ"} : Ui.es ? PERIOD_LABEL_ES : Ui.de ? PERIOD_LABEL_DE : Ui.en ? PERIOD_LABEL_EN : PERIOD_LABEL)[period(System.currentTimeMillis())];
     }
 
     private static int period(long now) {
@@ -421,6 +421,7 @@ final class Recs {
 
     /** Language of titles and genres; the services come from the region. */
     private static String lang() {
+        if (Ui.ru) return "ru-RU";
         if (Ui.es) return "ES".equals(java.util.Locale.getDefault().getCountry()) ? "es-ES" : "es-MX";
         if (Ui.de) return "de-DE";   // TMDB's de-AT and de-CH have few translations of their own
         return Ui.en ? "en-US" : "pt-BR";
@@ -462,15 +463,17 @@ final class Recs {
         if (p.kind.equals("tv")) parts.add(Ui.tr("Série", "Series"));
         if (genres != null && genres.length() > 0) {
             String name = genres.getJSONObject(0).optString("name");
-            parts.add(Ui.en ? name : genre(name));
+            parts.add(Ui.en || Ui.ru ? name : genre(name));
         }
         if (p.kind.equals("movie")) {
             int minutes = o.optInt("runtime");
-            if (minutes > 0 && Ui.en) parts.add(minutes >= 60 ? (minutes / 60) + "h " + (minutes % 60) + "m" : minutes + "m");
+            if (minutes > 0 && Ui.ru) parts.add(minutes >= 60 ? (minutes / 60) + " ч " + (minutes % 60) + " мин" : minutes + " мин");
+            else if (minutes > 0 && Ui.en) parts.add(minutes >= 60 ? (minutes / 60) + "h " + (minutes % 60) + "m" : minutes + "m");
             else if (minutes > 0) parts.add(minutes >= 60 ? (minutes / 60) + " h " + (minutes % 60) + " min" : minutes + " min");
         } else {
             int seasons = o.optInt("number_of_seasons");
-            if (seasons > 0 && Ui.en) parts.add(seasons == 1 ? "1 season" : seasons + " seasons");
+            if (seasons > 0 && Ui.ru) parts.add("Сезонов: " + seasons);
+            else if (seasons > 0 && Ui.en) parts.add(seasons == 1 ? "1 season" : seasons + " seasons");
             else if (seasons > 0 && Ui.de) parts.add(seasons == 1 ? "1 Staffel" : seasons + " Staffeln");
             else if (seasons > 0) parts.add(seasons == 1 ? "1 temporada" : seasons + " temporadas");
         }
@@ -545,7 +548,7 @@ final class Recs {
     }
 
     private long sourceStamp() {
-        long stamp = Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode();
+        long stamp = Prefs.tmdbKey().hashCode() * 31L + REGION.hashCode();
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
         return stamp;
     }
@@ -571,7 +574,7 @@ final class Recs {
     }
 
     private String readKey() {
-        String key = Config.TMDB_KEY.trim();
+        String key = Prefs.tmdbKey();
         return key.isEmpty() ? null : key;
     }
 

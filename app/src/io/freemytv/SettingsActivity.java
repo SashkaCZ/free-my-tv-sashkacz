@@ -98,6 +98,35 @@ public class SettingsActivity extends Activity {
         return super.dispatchKeyEvent(event);
     }
 
+    void choosePhotos() {
+        new AlertDialog.Builder(this).setTitle(Ui.tr("Fotos", "Screensaver photos"))
+            .setItems(new String[] {Ui.tr("Fotos", "Choose photos"), Ui.tr("Recomendações", "Use recommendations")}, (d, which) -> {
+                if (which == 1) { Prefs.setCustomPhotos(false); return; }
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*")
+                    .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try { startActivityForResult(intent, 42); }
+                catch (android.content.ActivityNotFoundException e) {
+                    android.widget.Toast.makeText(this, Ui.tr("Fotos", "Photo picker unavailable"), android.widget.Toast.LENGTH_LONG).show();
+                }
+            }).setNegativeButton(Ui.tr("Cancelar", "Cancel"), null).show();
+    }
+
+    @Override protected void onActivityResult(int request, int result, Intent intent) {
+        super.onActivityResult(request, result, intent);
+        if (request != 42 || result != RESULT_OK || intent == null) return;
+        java.util.List<android.net.Uri> uris = new ArrayList<>();
+        if (intent.getClipData() != null) {
+            for (int i = 0; i < Math.min(30, intent.getClipData().getItemCount()); i++) uris.add(intent.getClipData().getItemAt(i).getUri());
+        } else if (intent.getData() != null) uris.add(intent.getData());
+        new Thread(() -> {
+            boolean ok = PhotoAlbum.importPhotos(this, uris);
+            runOnUiThread(() -> {
+                if (ok) Prefs.setCustomPhotos(true);
+                else android.widget.Toast.makeText(this, Ui.tr("Fotos", "Could not load photos"), android.widget.Toast.LENGTH_LONG).show();
+            });
+        }, "photo-import").start();
+    }
+
     void showPreview() {
         preview = new DreamView(this);
         setContentView(preview);
@@ -122,7 +151,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[12];
+        private final Spring[] pop = new Spring[20];
         private final List<String> appPkgs = new ArrayList<>(), appLabels = new ArrayList<>();
         // The list picker (the app of a remote button): what it shows, which one is in use, where we are.
         private final List<String> pickLabels = new ArrayList<>();
@@ -215,7 +244,7 @@ public class SettingsActivity extends Activity {
                 }
                 case HOME_CHOICE: {
                     String name = row == 0 ? "Free My TV, " + Ui.tr("sem anúncios, com a tela de descanso nova", "no ads, with the new screensaver")
-                            : "Original, " + Ui.tr("o Início de fábrica da TV", "the TV's factory home screen");
+                            : Ui.tr("Original", "Original") + ", " + Ui.tr("o Início de fábrica da TV", "the TV's factory home screen");
                     boolean inUse = (row == 0) == freeActive();
                     return name + (inUse ? Ui.tr(". Em uso", ". In use") : "") + ", " + (row + 1) + Ui.tr(" de 2", " of 2");
                 }
@@ -253,7 +282,7 @@ public class SettingsActivity extends Activity {
                 top = LIST_TOP + 20 + row * (CHOICE_H + ROW_GAP);
                 height = CHOICE_H;
             } else {
-                top = LIST_TOP + 20 + row * (LIST_ROW_H + LIST_ROW_GAP);
+                top = LIST_TOP + 20 + (row - (screen == HOME_SETTINGS ? Math.max(0, focus - 8) : 0)) * (LIST_ROW_H + LIST_ROW_GAP);
                 height = LIST_ROW_H;
             }
             focusBox.set(LIST_X * k, top * k, LIST_R * k, (top + height) * k);
@@ -624,9 +653,9 @@ public class SettingsActivity extends Activity {
 
         // MARK: - Home Settings and Remote Buttons
 
-        private static final String[] LANGUAGES = {"auto", "pt", "en", "es", "de"}, UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
+        private static final String[] LANGUAGES = {"auto", "ru", "pt", "en", "es", "de"}, UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
         /** Home Settings: language, temperature, theme, weather, quotes, then one row per coin. */
-        private static final int CITY_ROW = 4, COIN_ROWS = 6;
+        private static final int CITY_ROW = 4, COIN_ROWS = 11;
 
         private boolean dollar() {
             return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
@@ -640,6 +669,11 @@ public class SettingsActivity extends Activity {
             l.add(Ui.tr("Widget do clima", "Weather widget"));
             l.add(Ui.tr("Cidade", "City"));
             l.add(Ui.tr("Widget de cotações", "Quotes widget"));
+            l.add(Ui.tr("Relógio", "Clock"));
+            l.add(Ui.tr("Data", "Date"));
+            l.add(Ui.tr("Fotos", "Screensaver photos"));
+            l.add(Ui.tr("Recomendações TMDB", "TMDB recommendations"));
+            l.add(Ui.tr("TMDB", "TMDB API key"));
             l.add("Bitcoin");
             l.add("Ethereum");
             l.add("Solana");
@@ -651,7 +685,7 @@ public class SettingsActivity extends Activity {
             String[] labels = settingLabels();
             String[] v = new String[labels.length];
             String lang = Prefs.language();
-            v[0] = lang.equals("pt") ? "Português" : lang.equals("en") ? "English" : lang.equals("es") ? "Español"
+            v[0] = lang.equals("ru") ? "Русский" : lang.equals("pt") ? "Português" : lang.equals("en") ? "English" : lang.equals("es") ? "Español"
                     : lang.equals("de") ? "Deutsch" : Ui.tr("Automático", "Automatic");
             String unit = Prefs.temperature();
             v[1] = unit.equals("C") ? "°C" : unit.equals("F") ? "°F" : Ui.tr("Automática", "Automatic");
@@ -660,6 +694,11 @@ public class SettingsActivity extends Activity {
             v[3] = onOff(Prefs.weather());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
             v[5] = onOff(Prefs.quotes());
+            v[6] = onOff(Prefs.clock());
+            v[7] = onOff(Prefs.date());
+            v[8] = Ui.tr("Fotos", Prefs.customPhotos() ? "Custom photos" : "Use recommendations");
+            v[9] = onOff(Prefs.recommendations());
+            v[10] = Ui.tr("TMDB", Prefs.tmdbKey().isEmpty() ? "Not configured" : "Configured");
             // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
             for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
             return v;
@@ -733,12 +772,30 @@ public class SettingsActivity extends Activity {
                 case 3: Prefs.setWeather(!Prefs.weather()); break;
                 case CITY_ROW: return;
                 case 5: Prefs.setQuotes(!Prefs.quotes()); break;
+                case 6: Prefs.setClock(!Prefs.clock()); break;
+                case 7: Prefs.setDate(!Prefs.date()); break;
+                case 8: activity.choosePhotos(); return;
+                case 9: Prefs.setRecommendations(!Prefs.recommendations()); break;
+                case 10: askTmdbKey(); return;
                 default:
                     if (!Prefs.quotes()) return;
                     Prefs.setCoin(focus - COIN_ROWS, !Prefs.coin(focus - COIN_ROWS));
                     break;
             }
             HomeData.get(getContext()).settingsChanged();
+        }
+
+        private void askTmdbKey() {
+            EditText field = new EditText(activity);
+            field.setSingleLine(true);
+            field.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            field.setHint(Ui.tr("TMDB", "API key or read access token"));
+            new AlertDialog.Builder(activity).setTitle(Ui.tr("TMDB", "TMDB API key")).setView(field)
+                .setPositiveButton(Ui.tr("Salvar", "Save"), (d, which) -> {
+                    Prefs.setTmdbKey(field.getText().toString());
+                    Recs.get(activity).refreshIfStale();
+                    invalidate();
+                }).setNegativeButton(Ui.tr("Cancelar", "Cancel"), null).show();
         }
 
         private void askCity() {
@@ -926,7 +983,9 @@ public class SettingsActivity extends Activity {
             c.drawText(keys ? Ui.tr("Botões do Controle", "Remote Buttons") : Ui.tr("Ajustes do Início", "Home Settings"),
                     LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             for (int i = 0; i < labels.length; i++) {
-                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
+                int scroll = screen == HOME_SETTINGS ? Math.max(0, focus - 8) : 0;
+                if (i < scroll || i >= scroll + 9) continue;
+                float y = (LIST_TOP + 20 + (i - scroll) * (LIST_ROW_H + LIST_ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
@@ -938,7 +997,7 @@ public class SettingsActivity extends Activity {
                 c.drawText(values[i], rowRect.right - 30 * k, base, rowValue);
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
-            float hy = (LIST_TOP + 20 + labels.length * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            float hy = (LIST_TOP + 20 + Math.min(9, labels.length) * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
             c.drawText(Ui.tr("OK ou as setas mudam o valor.", "OK or the arrows change the value."), LIST_X * k + 30 * k, hy, hint);
             if (keys) {
                 c.drawText(RemoteKeys.supported() ? Ui.tr("Disney e Globoplay: a própria TV controla esses botões.",
