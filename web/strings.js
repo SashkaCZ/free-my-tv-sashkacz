@@ -1,173 +1,275 @@
 /*
- * On-screen text in Portuguese, English and Spanish (the same copy as the Android app).
- * tr(pt, en, es): the text in the current language. The language follows the TV unless set in Home Settings.
+ * On-screen text in the viewer's language, from the Android app's catalogues (app/assets/i18n/<lang>.json, packed into
+ * i18n.js by tools/webapp.py), keyed by the English text in the code: tr('Live TV'). A key "context|Text" is "Text" where
+ * a language needs another word. Text built at runtime is a pattern with named placeholders: trf('{n} min ago', {n: 12});
+ * a count is plural('plural|one:{n} season|other:{n} seasons', 3); a date or time is formatDate('format|h:mm a', at).
+ * tools/translate.py keeps the catalogues in step with this code and the Android app's.
+ * Written for the Chromium of older TVs (webOS 3, Tizen 3): ES5, and Intl only where it's there.
  */
 var I18N = (function () {
   'use strict';
 
-  var lang = 'ru';
-  var russian = {
-  "TMDB recommendations": "Рекомендации TMDB",
-  "Explore": "Обзор",
-  "Mostly Sunny": "Преимущественно солнечно",
-  "Mostly Clear": "Преимущественно ясно",
-  "Partly Cloudy": "Переменная облачность",
-  "Cloudy": "Облачно",
-  "Heavy Rain": "Сильный дождь",
-  "Thunderstorms": "Гроза",
-  "Live TV": "Эфирное ТВ",
-  "All Apps": "Все приложения",
-  "Settings": "Настройки",
-  "Home Settings": "Настройки главного экрана",
-  "TV Settings": "Настройки телевизора",
-  "HDMI Inputs": "Входы HDMI",
-  "Inputs": "Входы",
-  "Shortcuts": "Быстрый доступ",
-  "Weather": "Погода",
-  "No weather data right now.": "Данные о погоде пока недоступны.",
-  "Sunrise ": "Восход ",
-  "Sunset ": "Закат ",
-  "Crypto": "Криптовалюты",
-  "24h change": "Изменение за 24 ч",
-  "For You": "Для вас",
-  "Couldn't open ": "Не удалось открыть ",
-  " of ": " из ",
-  ", tab ": ", вкладка ",
-  " of 3": " из 3",
-  "Dollar": "Доллар",
-  "Series": "Сериал",
-  "prices from ": "Котировки от ",
-  "Starting…": "Запуск…",
-  "Original": "Стандартный",
-  "Home Screen, ": "Главный экран, ",
-  "Screensaver, preview": "Заставка, предпросмотр",
-  "no ads, with the new screensaver": "без рекламы, с новой заставкой",
-  "the TV's factory home screen": "стандартный главный экран телевизора",
-  ". In use": ". Используется",
-  " of 2": " из 2",
-  "Your TV's home screen and screensaver": "Главный экран и заставка телевизора",
-  "Home Screen": "Главный экран",
-  "Screensaver": "Заставка",
-  "Preview": "Предпросмотр",
-  "On the TV: tick “Always allow” and press OK.": "На телевизоре отметьте «Всегда разрешать» и нажмите OK.",
-  "RECOMMENDATIONS": "РЕКОМЕНДАЦИИ",
-  "No TMDB key: see the README (config.properties).": "Нет ключа TMDB: см. README (config.properties).",
-  "Error: ": "Ошибка: ",
-  "Fetching titles…": "Загрузка рекомендаций…",
-  "This product uses the TMDB API but is not endorsed or certified by TMDB.": "Приложение использует API TMDB, но не одобрено и не сертифицировано TMDB.",
-  "COMPARISON": "СРАВНЕНИЕ",
-  "Home button": "Кнопка «Домой»",
-  "Free memory": "Свободная память",
-  "Home screen memory": "Память главного экрана",
-  "NOTICES": "УВЕДОМЛЕНИЯ",
-  "None yet.": "Пока нет.",
-  "No ads, with the new screensaver": "Без рекламы, с новой заставкой",
-  "The TV's factory home screen": "Стандартный главный экран телевизора",
-  "Switching takes a few seconds; the screen blinks while it measures.": "Переключение займёт несколько секунд; при измерении экран мигает.",
-  "now": "сейчас",
-  "Measuring the original home screen…": "Измерение стандартного главного экрана…",
-  "Switching the home screen and screensaver…": "Переключение главного экрана и заставки…",
-  "Android didn't accept the new home screen": "Android не принял новый главный экран",
-  "Turning off apps (": "Отключение приложений (",
-  "Measuring Free My TV…": "Измерение Free My TV…",
-  "Couldn't turn on Free My TV: ": "Не удалось включить Free My TV: ",
-  "Turning the apps back on…": "Восстановление приложений…",
-  "Turning apps back on (": "Восстановление приложений (",
-  "Restoring the original home screen…": "Восстановление стандартного главного экрана…",
-  "Original mode: the factory home screen, screensaver and apps are back.": "Восстановлены стандартный главный экран, заставка и приложения.",
-  "the original home screen": "стандартный главный экран",
-  "Original mode, but I couldn't turn back on: ": "Стандартный режим, но не удалось включить: ",
-  "Couldn't go back to the original: ": "Не удалось восстановить стандартный режим: ",
-  "Free My TV's home screen crashed 3 times in a row; I switched back to the original one.": "Главный экран Free My TV завершился с ошибкой три раза подряд; восстановлен стандартный экран.",
-  "the home screen": "главный экран",
-  "the screensaver": "заставка",
-  "Couldn't check Free My TV: ": "Не удалось проверить Free My TV: ",
-  "The TV update turned back on ": "Обновление телевизора снова включило ",
-  "Turned off what was missing: ": "Дополнительно отключено: ",
-  "The TV was updated; Free My TV is still on.": "Телевизор обновлён; Free My TV продолжает работать.",
-  "Connecting…": "Подключение…",
-  "Accept “Allow USB debugging?” on the TV (tick “Always allow”).": "Разрешите отладку по USB на телевизоре (отметьте «Всегда разрешать»).",
-  "Language": "Язык",
-  "Temperature": "Температура",
-  "Theme": "Тема",
-  "Automatic": "Автоматически",
-  "Light": "Светлая",
-  "Dark": "Тёмная",
-  "Weather widget": "Виджет погоды",
-  "City": "Город",
-  "Searching…": "Поиск…",
-  "Type the city's name": "Введите название города",
-  "Search": "Найти",
-  "Cancel": "Отмена",
-  "No city with that name.": "Город с таким названием не найден.",
-  "Couldn't search now: ": "Не удалось выполнить поиск: ",
-  "Quotes widget": "Виджет котировок",
-  "On": "Вкл.",
-  "Off": "Выкл.",
-  "Shelf": "Панель приложений",
-  "on the shelf, place ": "на панели, позиция ",
-  "not on the shelf": "нет на панели",
-  "Remote Buttons": "Кнопки пульта",
-  "Netflix button": "Кнопка Netflix",
-  "YouTube button": "Кнопка YouTube",
-  "Prime Video button": "Кнопка Prime Video",
-  "TCL Channel button": "Кнопка TCL Channel",
-  "Nothing": "Ничего",
-  "Not installed": "Не установлено",
-  ", selected": ", выбрано",
-  "OK or the arrows change the value.": "OK или стрелки изменяют значение.",
-  "OK picks, Back cancels.": "OK — выбрать, Назад — отменить.",
-  "Disney and Globoplay: the TV itself controls those buttons.": "Кнопками Disney и Globoplay управляет телевизор.",
-  "These are the TCL remote's buttons: on this TV, the buttons work as they always did.": "Это кнопки пульта TCL; на этом телевизоре они работают как обычно.",
-  "Clock": "Часы на главном экране",
-  "Date": "Дата на главном экране",
-  "Screensaver photos": "Фото для заставки",
-  "Choose photos": "Выбрать фотографии",
-  "Use recommendations": "Использовать рекомендации",
-  "Photo picker unavailable": "Установите файловый менеджер для выбора фотографий.",
-  "Could not load photos": "Не удалось загрузить фотографии.",
-  "Custom photos": "Свои фотографии",
-  "Movies": "Фильмы",
-  "Shows": "Сериалы",
-  "Clear": "Ясно",
-  "Mainly clear": "Преимущественно ясно",
-  "Partly cloudy": "Переменная облачность",
-  "Overcast": "Пасмурно",
-  "Fog": "Туман",
-  "Drizzle": "Морось",
-  "Rain": "Дождь",
-  "Snow": "Снег",
-  "Showers": "Ливни",
-  "Thunderstorm": "Гроза",
-  "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…": "Ошибка главного экрана Free My TV.\nВосстановление стандартного главного экрана телевизора…",
-  "the TV's first setup saved the Wi-Fi, and turning it off would erase those networks. In Settings → Network & Internet, forget the network and connect again (networks out of range don't show there: Claude Code can remove them from your computer), then try once more.": "Первоначальная настройка телевизора сохранила сети Wi-Fi; её отключение удалит эти сети. В настройках сети удалите сохранённую сеть и подключитесь заново, затем повторите попытку. Недоступные сети можно удалить с компьютера.",
-  "Photo URLs": "Адреса фотографий",
-  "Enter photo URLs separated by spaces; empty restores recommendations": "Введите адреса фото через пробел; пустая строка возвращает рекомендации",
-  "Photo URLs must start with http:// or https://": "Адреса фото должны начинаться с http:// или https://",
-  "On · ": "Вкл. · ",
-  "OK adds or removes · ← → change the order": "OK — добавить или удалить · ← → — изменить порядок",
-  "TMDB API key": "Ключ API TMDB",
-  "Configured": "Указан",
-  "Not configured": "Не указан",
-  "Save": "Сохранить",
-  "API key or read access token": "Ключ API или токен доступа TMDB"
-};
+  var CATALOGUES = window.I18N_CATALOGUES || {};
+  var lang = 'en', catalogue = {}, locale = 'en-US', pluralRules = null;
+  var has = Object.prototype.hasOwnProperty;
 
-  function detect(setting) {
-    var v = (setting || 'auto').toLowerCase();
-    if (v === 'auto') v = (navigator.language || 'en').toLowerCase();
-    return v.indexOf('ru') === 0 ? 'ru' : v.indexOf('pt') === 0 ? 'pt' : v.indexOf('es') === 0 ? 'es' : 'en';
+  /** The usual country for each language's dates and numbers, when the TV itself is in another language. */
+  var REGIONS = {pt: 'BR', es: 'ES', de: 'DE', fr: 'FR', it: 'IT', nl: 'NL', pl: 'PL', sv: 'SE', da: 'DK', nb: 'NO',
+    fi: 'FI', cs: 'CZ', ro: 'RO', tr: 'TR', ru: 'RU', uk: 'UA', el: 'GR', ja: 'JP', ko: 'KR', hi: 'IN', id: 'ID', vi: 'VN', th: 'TH'};
+
+  /** Each language in its own name, for TVs without Intl.DisplayNames (Chromium before 81). */
+  var NAMES = {en: 'English', pt: 'Português', es: 'Español', de: 'Deutsch', fr: 'Français', it: 'Italiano',
+    nl: 'Nederlands', pl: 'Polski', sv: 'Svenska', da: 'Dansk', nb: 'Norsk bokmål', fi: 'Suomi', cs: 'Čeština',
+    ro: 'Română', tr: 'Türkçe', ru: 'Русский', uk: 'Українська', el: 'Ελληνικά', ja: '日本語', ko: '한국어',
+    'zh-CN': '中文', hi: 'हिन्दी', id: 'Indonesia', vi: 'Tiếng Việt', th: 'ไทย'};
+
+  /**
+   * The CLDR plural category of a whole number, for TVs without Intl.PluralRules (Chromium before 63). Only the
+   * languages whose catalogues use more than "one" and "other" need a rule; the rest are one for 1, else other.
+   */
+  var PLURALS = {
+    ru: slavic,
+    uk: slavic,
+    pl: function (n) {
+      var t = n % 10, h = n % 100;
+      return n === 1 ? 'one' : t >= 2 && t <= 4 && (h < 12 || h > 14) ? 'few' : 'many';
+    },
+    cs: function (n) { return n === 1 ? 'one' : n >= 2 && n <= 4 ? 'few' : 'other'; },
+    ro: function (n) { var h = n % 100; return n === 1 ? 'one' : n === 0 || (h >= 1 && h <= 19) ? 'few' : 'other'; }
+  };
+
+  function slavic(n) {
+    var t = n % 10, h = n % 100;
+    return t === 1 && h !== 11 ? 'one' : t >= 2 && t <= 4 && (h < 12 || h > 14) ? 'few' : 'many';
+  }
+
+  /** The text for this English key in the current language (the English itself when there is none). */
+  function tr(english) {
+    if (has.call(catalogue, english)) return catalogue[english];
+    var bar = english.indexOf('|');
+    if (bar < 0) return english;
+    var plain = english.substring(bar + 1);
+    return has.call(catalogue, plain) ? catalogue[plain] : plain;
+  }
+
+  /** A pattern with named placeholders, filled from an object: trf('{n} min ago', {n: 12}). */
+  function trf(english, values) {
+    return tr(english).replace(/\{([a-zA-Z_][a-zA-Z_0-9]*)\}/g, function (all, name) {
+      return values && has.call(values, name) ? String(values[name]) : all;
+    });
+  }
+
+  /**
+   * A count with its word in the right plural form: plural('plural|one:{n} season|other:{n} seasons', 3). Each catalogue
+   * gives one form per plural category its language uses; a missing one falls back to "other", then to the last.
+   */
+  function plural(key, n) {
+    var forms = tr(key).split('|'), category = pluralOf(n), chosen = null, other = null, last = '';
+    for (var i = 0; i < forms.length; i++) {
+      var colon = forms[i].indexOf(':'), name = colon < 0 ? '' : forms[i].substring(0, colon);
+      last = colon < 0 ? forms[i] : forms[i].substring(colon + 1);
+      if (name === category) chosen = last;
+      if (name === 'other') other = last;
+    }
+    return (chosen !== null ? chosen : other !== null ? other : last).replace(/\{n\}/g, String(n));
+  }
+
+  function pluralOf(n) {
+    if (pluralRules) return pluralRules.select(n);
+    var rule = PLURALS[base(lang)];
+    return rule ? rule(Math.abs(n)) : n === 1 ? 'one' : 'other';
+  }
+
+  // MARK: - Dates and times, from the catalogues' SimpleDateFormat patterns
+
+  /**
+   * A date or time in the catalogue's pattern for a "format|..." key, as Java's SimpleDateFormat writes it on Android:
+   * formatDate('format|EEEE, MMMM d', at). Names come from the TV's own Intl; a pattern with a letter this doesn't
+   * know falls back to the English one, so a catalogue can't break the clock.
+   */
+  function formatDate(key, at) {
+    var minute = Math.floor(at / 60000), last = formatted[key];
+    if (last && last.minute === minute && last.lang === lang) return last.text;   // the clocks ask every second
+    var d = new Date(at), out = format(tr(key), d, locale);
+    if (out === null) out = format(key.substring(key.indexOf('|') + 1), d, 'en-US');
+    formatted[key] = {minute: minute, lang: lang, text: out};
+    return out;
+  }
+
+  /** The last text of each "format|..." key, by minute (the catalogues' patterns go down to minutes). */
+  var formatted = {};
+
+  function format(pattern, d, loc) {
+    var out = '', i = 0;
+    while (i < pattern.length) {
+      var ch = pattern.charAt(i);
+      if (ch === "'") {
+        if (pattern.charAt(i + 1) === "'") { out += "'"; i += 2; continue; }
+        // Quoted text, where '' is a quote: "h 'o''clock'".
+        for (i++; i < pattern.length; i++) {
+          if (pattern.charAt(i) !== "'") out += pattern.charAt(i);
+          else if (pattern.charAt(i + 1) === "'") out += pattern.charAt(i++);
+          else break;
+        }
+        if (i >= pattern.length) return null;
+        i++;
+        continue;
+      }
+      if (!/[A-Za-z]/.test(ch)) { out += ch; i++; continue; }
+      var n = 1;
+      while (pattern.charAt(i + n) === ch) n++;
+      var field = part(ch, n, d, loc);
+      if (field === null) return null;
+      out += field;
+      i += n;
+    }
+    return out;
+  }
+
+  function part(ch, n, d, loc) {
+    var h = d.getHours();
+    switch (ch) {
+      case 'y': return n === 2 ? pad(d.getFullYear() % 100, 2) : pad(d.getFullYear(), n);
+      case 'M': case 'L': return n >= 4 ? month(d, loc, ch === 'M') : n === 3 ? name(d, loc, {month: 'short'}) : pad(d.getMonth() + 1, n);
+      case 'd': return pad(d.getDate(), n);
+      case 'E': return name(d, loc, {weekday: n >= 4 ? 'long' : 'short'});
+      case 'a': return dayPeriod(d, loc);
+      case 'H': return pad(h, n);
+      case 'k': return pad(h || 24, n);
+      case 'K': return pad(h % 12, n);
+      case 'h': return pad(h % 12 || 12, n);
+      case 'm': return pad(d.getMinutes(), n);
+      case 's': return pad(d.getSeconds(), n);
+      default: return null;
+    }
+  }
+
+  function pad(v, n) {
+    var s = String(v);
+    while (s.length < n) s = '0' + s;
+    return s;
+  }
+
+  function name(d, loc, options) {
+    try { return d.toLocaleDateString(loc, options); } catch (e) { return d.toLocaleDateString('en-US', options); }
+  }
+
+  /**
+   * The month's full name. Next to a day ("MMMM", the format form) some languages decline it, as Java does: "21 октября",
+   * not "октябрь". That form is the TV's own "day month" text without the day, unless the plain name is a word of it
+   * ("21 de octubre" → "octubre").
+   */
+  function month(d, loc, withDay) {
+    var plain = name(d, loc, {month: 'long'});
+    if (!withDay) return plain;
+    var both = name(d, loc, {month: 'long', day: 'numeric'});
+    var rest = both.replace(new RegExp('(^|\\s)' + d.getDate() + '\\.?(?=\\s|$)'), ' ').replace(/^\s+|\s+$/g, '');
+    if (!rest || rest === both) return plain;
+    var words = rest.split(/\s+/);
+    for (var i = 0; i < words.length; i++) if (words[i] === plain) return plain;
+    return rest;
+  }
+
+  /** AM or PM in the language ("오후" in Korean), where the TV's Intl can say it. */
+  function dayPeriod(d, loc) {
+    try {
+      var parts = new Intl.DateTimeFormat(loc, {hour: 'numeric', hour12: true}).formatToParts(d);
+      for (var i = 0; i < parts.length; i++) if (parts[i].type === 'dayPeriod') return parts[i].value;
+    } catch (e) { /* older Chromium: no formatToParts */ }
+    return d.getHours() < 12 ? 'AM' : 'PM';
+  }
+
+  // MARK: - Picking the language
+
+  /** "en" and every language with a catalogue, sorted by code. */
+  function languages() {
+    var all = ['en'];
+    for (var code in CATALOGUES) if (has.call(CATALOGUES, code)) all.push(code);
+    return all.sort();
+  }
+
+  /** The language's own name: "Português", "Deutsch", "日本語". */
+  function languageName(code) {
+    if (has.call(NAMES, code)) return NAMES[code];
+    try {
+      var own = new Intl.DisplayNames([code], {type: 'language'}).of(code);
+      return own.charAt(0).toUpperCase() + own.substring(1);
+    } catch (e) {
+      return code;
+    }
+  }
+
+  /** The catalogue for a setting ("auto", "fr", "pt-BR"…), or for the TV's language with "auto"; else "en". */
+  function resolve(setting) {
+    if (setting && setting !== 'auto') {
+      var code = match(setting.replace('_', '-'));
+      if (code) return code;
+    }
+    var tv = (navigator.language || 'en').replace('_', '-');
+    // Simplified Chinese only where it is the written form (not Taiwan, Hong Kong or Macau).
+    if (base(tv) === 'zh' && /-(Hant|TW|HK|MO)\b/i.test(tv)) return 'en';
+    return match(base(tv)) || 'en';
+  }
+
+  function match(tag) {
+    var all = languages(), lower = tag.toLowerCase(), first = base(lower);
+    for (var i = 0; i < all.length; i++) if (all[i].toLowerCase() === lower) return all[i];
+    for (var j = 0; j < all.length; j++) if (base(all[j]) === first) return all[j];
+    return null;
+  }
+
+  /** The language without its country ("zh" for "zh-CN"), with Java's old codes for Indonesian and Hebrew, and Norwegian. */
+  function base(code) {
+    var l = code.split('-')[0].toLowerCase();
+    return l === 'in' ? 'id' : l === 'iw' ? 'he' : l === 'no' || l === 'nn' ? 'nb' : l;
+  }
+
+  /** The BCP 47 tag for dates and numbers: the TV's own country when it is in this language (es-MX, de-AT…). */
+  function localeOf(code) {
+    if (code === 'en') return 'en-US';
+    if (code === 'pt') return 'pt-BR';
+    if (code.indexOf('-') > 0) return code;
+    var tv = navigator.language || '';
+    if (base(tv) === code && tv.indexOf('-') > 0) return tv;
+    return REGIONS[code] ? code + '-' + REGIONS[code] : code;
   }
 
   return {
-    set: function (setting) { lang = detect(setting); document.documentElement.lang = lang === 'pt' ? 'pt-BR' : lang; },
+    /** After the language changes in Home Settings (and once at startup). */
+    set: function (setting) {
+      lang = resolve(setting);
+      catalogue = lang === 'en' ? {} : CATALOGUES[lang] || {};
+      locale = localeOf(lang);
+      try { pluralRules = new Intl.PluralRules(locale); } catch (e) { pluralRules = null; }
+      document.documentElement.lang = locale;
+    },
+    /** The catalogue in use: "en", "pt", "zh-CN"… */
     get lang() { return lang; },
-    tr: function (pt, en, es) { return lang === 'ru' ? (russian[en] || (/^\d+ min ago$/.test(en) ? en.replace(' min ago', ' мин. назад') : /^\d+ h ago$/.test(en) ? en.replace(' h ago', ' ч. назад') : /^\d+ seasons?$/.test(en) ? 'Сезонов: ' + parseInt(en, 10) : en)) : lang === 'es' ? (es || en) : lang === 'en' ? en : pt; },
+    /** The language without its country, as TMDB names it ("zh" for "zh-CN"). */
+    get base() { return base(lang); },
     /** BCP 47 tag for dates, numbers and TMDB. */
-    locale: function () { return lang === 'ru' ? 'ru-RU' : lang === 'es' ? 'es-MX' : lang === 'en' ? 'en-US' : 'pt-BR'; }
+    locale: function () { return locale; },
+    languages: languages,
+    languageName: languageName,
+    tr: tr,
+    trf: trf,
+    plural: plural,
+    formatDate: formatDate
   };
 })();
 
-function tr(pt, en, es) {
-  return I18N.tr(pt, en, es);
+function tr(english) {
+  return I18N.tr(english);
+}
+
+function trf(english, values) {
+  return I18N.trf(english, values);
+}
+
+function plural(key, n) {
+  return I18N.plural(key, n);
+}
+
+function formatDate(key, at) {
+  return I18N.formatDate(key, at);
 }
